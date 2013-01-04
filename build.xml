@@ -1,0 +1,35 @@
+<project name="Build jqt" default="all" basedir=".">
+
+  <!-- set property -->
+  <property name="source"         value="./src2" />
+  <property name="htdocs"         value="./htdocs" />
+  <property name="javadoc"        value="./javadoc" />
+  <property name="classes"         value="./classes" />
+  <property name="package" value="com.github.hbjpn.jqt" />
+
+  <target name="all" depends="init,compile" />
+
+  <!-- Initialize -->
+  <target name="init">
+    <mkdir dir="${classes}" />
+  </target>
+
+  <!-- compile java sources -->
+  <target name="compile">
+    <javac srcdir="${source}" destdir="${classes}"
+      debug="on" optimize="off" deprecation="off" />
+  </target>
+
+  <!-- make javadoc -->
+  <target name="javadoc">
+    <delete dir="${javadoc}" />
+    <mkdir dir="${javadoc}" />
+    <javadoc sourcepath="${source}" packagenames="${package}" destdir="${javadoc}" />
+  </target>
+
+  <!-- clean work file -->
+  <target name="clean">
+    <delete dir="${javadoc}" />
+    <delete dir="${classes}" />
+  </target>
+</project>
