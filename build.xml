@@ -1,7 +1,7 @@
 <project name="Build jqt" default="all" basedir=".">
 
   <!-- set property -->
-  <property name="source"         value="./src2" />
+  <property name="source"         value="./src" />
   <property name="htdocs"         value="./htdocs" />
   <property name="javadoc"        value="./javadoc" />
   <property name="classes"         value="./classes" />
