@@ -297,7 +297,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	}
 	
 	public void actionPerformed(ActionEvent e) {
-		System.out.println("ActionPerformed : [" + e.getActionCommand() + "]");
+		//System.out.println("ActionPerformed : [" + e.getActionCommand() + "]");
 		if( e.getSource() == menuAddGeneralJobs ){
 			addGeneralJobDialog.setAlwaysOnTop(false);
 			addGeneralJobDialog.setVisible(true);

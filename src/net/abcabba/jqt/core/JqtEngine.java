@@ -29,6 +29,8 @@ import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 interface JqtEvent
 {
@@ -148,6 +150,50 @@ class JqtJobContext
 }
 
 /**
+ * Parse progress in Double from specified string
+ */
+class ProgressParser
+{
+	ArrayList<Pattern> patterns;
+	private static ProgressParser instance = new ProgressParser();
+	
+	public static ProgressParser getInstance()
+	{
+		return instance;
+	}
+	
+	private ProgressParser()
+	{
+		// TODO : Treat as configurable parameter ?
+		patterns = new ArrayList<Pattern>();
+		String regex = "Progress:(\\d+)";
+		Pattern p = Pattern.compile(regex);
+		patterns.add(p);
+	}
+	
+	/**
+	 * Get progress in Double from indicated string
+	 * 
+	 * @param line Input string
+	 * @return Progress if line includes progress indicator otherwise null
+	 */
+	public Double getProgress(String line)
+	{
+		Double ret = null;
+		for(Pattern p : patterns)
+		{
+			Matcher m = p.matcher(line);
+			if(m.find())
+			{
+				ret = Double.parseDouble(m.group(1));
+				break;
+			}
+		}
+		return ret;
+	}
+}
+
+/**
  * Thread class to run a Job 
  */
 class JqtJobRunThread extends Thread{
@@ -174,21 +220,8 @@ class JqtJobRunThread extends Thread{
 		
 		ArrayList<String> command = new ArrayList<String>();
 	
-		if( JqtEngine.osType == JqtEngine.OSType.WINDOWS ){
-			command.add(job.exePath);
-			//command.add("-noexit");
-			//command.add("-c");
-			command.add("-inputformat");
-			command.add("none");
-			command.add("-file");
-			command.addAll(job.firstArg);
-		}else{
-			// MAC, Linux, Unix
-			//command.add("bash");
-			command.add(job.exePath);
-			//command.add("-c");
-			command.addAll(job.firstArg);
-		}
+		command.add(job.exePath);
+		command.addAll(job.firstArg);
 		
 		// Create process
 		pb = new ProcessBuilder(command);
@@ -209,9 +242,11 @@ class JqtJobRunThread extends Thread{
 	        	if( line.length() == 0 ){
 	        		continue;
 	        	}
-	        	double progress = Double.parseDouble(line); // TODO : implementation
-	        	engine.pushEvent(new JqtJobProgressUpdateEvent(job, progress));
-	        	//System.out.println(line);
+	        	Double progress = ProgressParser.getInstance().getProgress(line);
+	        	if(progress != null)
+	        	{
+	        		engine.pushEvent(new JqtJobProgressUpdateEvent(job, progress));
+	        	}
 	        }
 	        
 	        int ret = p.waitFor();

@@ -23,7 +23,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -283,12 +282,6 @@ public class AddGeneralJobDialog extends JDialog implements ActionListener{
 		
 		scriptExplainPanel.setBorder(
 						new EmptyBorder(16,16,16,16));
-		
-		scriptExplainPanel.add( new JLabel("<html>"+
-				"Windows   : Script file must be invokable with command \"<font color=\"red\">cmd.exe /c {script file}</font>\"<br>"+
-				"Linux/Mac : Script file must be invokable with command \"<font color=\"red\">bash {script file}\"</font></html>") );
-		//scriptTypePanel.add( envHomesTextField );
-		//scriptTypePanel.add( envHomesSelectDirButton );
 		
 		envHomesSelectDirButton.addActionListener(this);
 		
