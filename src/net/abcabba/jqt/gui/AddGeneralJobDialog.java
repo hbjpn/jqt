@@ -23,6 +23,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,29 +37,29 @@ import javax.swing.table.DefaultTableModel;
 /**
  * Map of extension and execution program
  */
-class ScriptTable {
+class ScriptExecutionRule {
 	
-	private Hashtable<String, String> extMap = new Hashtable<String, String>();
+	private Hashtable<String, ArrayList<String>> extMap = new Hashtable<String, ArrayList<String>>();
 	
-	private static ScriptTable instance = new ScriptTable();
+	private static ScriptExecutionRule instance = new ScriptExecutionRule();
 	
-	private ScriptTable()
+	private ScriptExecutionRule()
 	{
 		// TODO : Treat as configurable file ?
 		
 		// Windows
-		extMap.put("ps1", "powershell.exe");
-		extMap.put("bat", "cmd.exe");
+		extMap.put("ps1", AddGeneralJobDialog.parseArguments("powershell.exe -inputformat none -file $FILE_NAME"));
+		extMap.put("bat", AddGeneralJobDialog.parseArguments("cmd.exe -c $FILE_NAME"));
 		
 		// Linux/Unix/Mac 
-		extMap.put("sh", "bash");
+		extMap.put("sh", AddGeneralJobDialog.parseArguments("bash $FILE_NAME"));
 		
 		// Common
-		extMap.put("py", "python");
-		extMap.put("rb", "ruby");
+		extMap.put("py", AddGeneralJobDialog.parseArguments("python $FILE_NAME"));
+		extMap.put("rb", AddGeneralJobDialog.parseArguments("ruby $FILE_NAME"));
 	}
 	
-	public static ScriptTable getInstance()
+	public static ScriptExecutionRule getInstance()
 	{
 		return instance;
 	}
@@ -69,7 +70,7 @@ class ScriptTable {
 	 * @param ext Extension( excluding period )
 	 * @return Execution program. If no map found, null is returned.
 	 */
-	public String getExPath(String ext)
+	public ArrayList<String> getExPath(String ext)
 	{
 		if(extMap.containsKey(ext))
 		{
@@ -499,7 +500,7 @@ public class AddGeneralJobDialog extends JDialog implements ActionListener{
 	 * @brief Parse arguments string and make array of each arguments 
 	 * @param str Raw string including all of arguments
 	 */
-	public ArrayList<String> parseArguments(String str){
+	public static ArrayList<String> parseArguments(String str){
 		ArrayList<String> args = new ArrayList<String>();
 
 		StringBuilder tmpStr = new StringBuilder();
@@ -622,22 +623,33 @@ public class AddGeneralJobDialog extends JDialog implements ActionListener{
 						env.put(variable, value);
 					}
 					
-					//String exePath = "cmd.exe";
-					String exePath = ScriptTable.getInstance().getExPath(getExtension(fileName));
+					ArrayList<String> exePathList = ScriptExecutionRule.getInstance().getExPath(getExtension(fileName));
+					if(exePathList == null)
+					{
+						exePathList = new ArrayList<String>();
+						exePathList.add(fileName);
+					}
+					for(int k = 0; k < exePathList.size(); ++k)
+					{
+						String replacedStr = exePathList.get(k).replaceAll("\\$FILE_NAME", fileName);
+						exePathList.set(k, replacedStr);
+					}
+					for(String s : exePathList)
+					{
+						System.out.println(s);
+					}
 					
-					int np = Integer.parseInt(npTextField.getText());
-					
+					String exePath = exePathList.get(0);
 					ArrayList<String> args = new ArrayList<String>();
 					
-					if(exePath != null)
+					for(int k = 1; k < exePathList.size(); ++k)
 					{
-						args.add(fileName);
-					}else
-					{
-						exePath = fileName;
+						args.add(exePathList.get(k));
 					}
 					args.addAll(parseArguments(argsTextField.getText()));
-					//args.add(argsTextField.getText());
+					
+
+					int np = Integer.parseInt(npTextField.getText());					
 					
 					/*
 					ArrayList<Job> parentJobList = new ArrayList<Job>();
@@ -646,7 +658,7 @@ public class AddGeneralJobDialog extends JDialog implements ActionListener{
 					}
 					*/
 
-					owner.addJob(directoryPath, args, env, exePath, np/*, Job.JobType.JOB_TYPE_GENERAL,parentJobList*/);
+					owner.addJob(directoryPath, args, env, exePath, np);
 				}								
 			}
 			
