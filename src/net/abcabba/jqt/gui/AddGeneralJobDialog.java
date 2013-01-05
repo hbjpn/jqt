@@ -627,10 +627,6 @@ public class AddGeneralJobDialog extends JDialog implements ActionListener{
 						String replacedStr = exePathList.get(k).replaceAll("\\$FILE_NAME", fileName);
 						exePathList.set(k, replacedStr);
 					}
-					for(String s : exePathList)
-					{
-						System.out.println(s);
-					}
 					
 					String exePath = exePathList.get(0);
 					ArrayList<String> args = new ArrayList<String>();

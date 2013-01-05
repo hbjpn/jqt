@@ -339,38 +339,21 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 				
 			}
 		}else if( e.getSource() == menuPuRecalculateSelectedJobs ){
-			revertToWaitingStatus( jobListTable.getSelectedRows() );
+			for(int r : jobListTable.getSelectedRows())
+			{
+				engine.reset(jobListTableModel.get(r).getJobInfo().relatedJob);
+			}
 		}else if( e.getSource() == this.updateTimer )
 		{
 			for(int i = 0; i < jobListTable.getRowCount(); ++i)
 			{
-				JobTableModel model = (JobTableModel)jobListTable.getModel();
-				JobTableElement element = model.get(i);
+				JobTableElement element = jobListTableModel.get(i);
 				JqtJob job = element.getJobInfo().relatedJob;
 				element.setJobInfo(this.engine.getJobInfo(job));
 			}
 			jobListTable.updateUI();
 		}
 			
-	}
-	
-	public void revertToWaitingStatus(int[] rows) {
-		/*
-		for(int i = 0; i < rows.length; ++i ){
-			int row = rows[i];
-			Job job = jobListTableModel.get(row);			
-			if( job.getStatus() != Job.statusRunning &&
-				job.getStatus() != Job.statusStarting &&
-				job.getStatus() != Job.statusWaiting ){
-				
-				// Set status to Waiting
-				job.setStatus(Job.statusWaiting);
-			}
-		}
-		
-		jobListTableModel.fireTableDataChanged();
-		//startJob();
-		 */
 	}
 	
 	public void clearCompletedErroredJobs(){

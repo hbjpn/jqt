@@ -60,6 +60,16 @@ class JqtJobRemoveEvent extends JqtJobEvent
 	}	
 }
 
+class JqtJobResetEvent extends JqtJobEvent
+{
+	JqtJobResetEvent(JqtJob relatedJob, SynchronousQueue<Boolean> rendezvousChannel) {
+		super(relatedJob);
+		this.rendezvousChannel = rendezvousChannel;
+	}
+
+	public SynchronousQueue<Boolean> rendezvousChannel;
+}
+
 class JqtJobStartEvent extends JqtJobEvent
 {
 	JqtJobStartEvent(JqtJob relatedJob) {
@@ -282,6 +292,14 @@ interface JqtEngineInterface
 	 * @param job Job to remove
 	 */
 	public void remove(JqtJob job);
+
+	/**
+	 * Reset job status synchronously
+	 * This method is thread safe
+	 * 
+	 * @param job Job to reset
+	 */
+	public boolean reset(JqtJob job);
 	
 	/**
 	 * Get job status synchronously
@@ -429,6 +447,30 @@ public class JqtEngine extends Thread implements JqtEngineInterface
 	public void remove(JqtJob job)
 	{
 		eventQueue.add(new JqtJobRemoveEvent(job));
+	}
+	
+	/**
+	 * Reset job status
+	 * This method is thread safe
+	 * 
+	 * @param job Job to reset
+	 * @return true if job is reset, otherwise false.
+	 */
+	public boolean reset(JqtJob job)
+	{
+		// TODO Auto-generated method stub
+		SynchronousQueue<Boolean> rendezvousChannel
+			= new SynchronousQueue<Boolean>();
+		eventQueue.add(new JqtJobResetEvent(job, rendezvousChannel));
+		
+		boolean ret = false;
+		try {
+			ret = rendezvousChannel.take();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return ret;
 	}
 	
 	/**
@@ -585,6 +627,28 @@ public class JqtEngine extends Thread implements JqtEngineInterface
 			{
 				JqtJobRemoveEvent e = (JqtJobRemoveEvent)event;
 				jobContextList.remove(e.relatedJob);
+			}
+			else if(event instanceof JqtJobResetEvent)
+			{
+				JqtJobResetEvent e = (JqtJobResetEvent)event;
+				JqtJobContext context = jobContextList.get(e.relatedJob);
+				
+				Boolean ret = false;
+				
+				if(context.jobStatus.status == JqtJobStatus.COMPLETE ||
+				   context.jobStatus.status == JqtJobStatus.ERROR)
+				{
+					context.jobStatus.reset();
+					ret = true;
+				}
+				try{
+					e.rendezvousChannel.put(ret);
+				}catch(Exception e1)
+				{
+					e1.printStackTrace();
+				}
+				
+				invokeJob();
 			}
 			else if(event instanceof JqtJobProgressUpdateEvent)
 			{

@@ -31,6 +31,11 @@ public class JqtJobStatus
 	
 	public JqtJobStatus()
 	{
+		reset();
+	}
+	
+	public void reset()
+	{
 		this.progress = 0.0;
 		this.status = WAITING;
 		this.jobStartDate = -1;
