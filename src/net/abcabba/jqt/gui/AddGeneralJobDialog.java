@@ -33,6 +33,52 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 
+/**
+ * Map of extension and execution program
+ */
+class ScriptTable {
+	
+	private Hashtable<String, String> extMap = new Hashtable<String, String>();
+	
+	private static ScriptTable instance = new ScriptTable();
+	
+	private ScriptTable()
+	{
+		// TODO : Treat as configurable file ?
+		
+		// Windows
+		extMap.put("ps1", "powershell.exe");
+		extMap.put("bat", "cmd.exe");
+		
+		// Linux/Unix/Mac 
+		extMap.put("sh", "bash");
+		
+		// Common
+		extMap.put("py", "python");
+		extMap.put("rb", "ruby");
+	}
+	
+	public static ScriptTable getInstance()
+	{
+		return instance;
+	}
+	
+	/**
+	 * Get execution program from extension
+	 * 
+	 * @param ext Extension( excluding period )
+	 * @return Execution program. If no map found, null is returned.
+	 */
+	public String getExPath(String ext)
+	{
+		if(extMap.containsKey(ext))
+		{
+			return extMap.get(ext);
+		}
+		return null;
+	}
+}
+
 class ScriptProp {
 	public String directoryPath;
 	public String configName;
@@ -516,6 +562,19 @@ public class AddGeneralJobDialog extends JDialog implements ActionListener{
 		return args;
 	}
 	
+	/**
+	 * Get extension from filename
+	 * @param fn File name
+	 * @return Extension excluding period
+	 */
+	private String getExtension(String fn) {
+	    int period = fn.lastIndexOf(".");
+	    if (period != -1) {
+	        return fn.substring(period + 1);
+	    }
+	    return fn;
+	}
+	
 	public void actionPerformed(ActionEvent e) {
 		
 		if( e.getSource() == selectDirButton ){
@@ -556,9 +615,7 @@ public class AddGeneralJobDialog extends JDialog implements ActionListener{
 					String directoryPath = (String)candidateScriptsTableModel.getValueAt(i,scenarioDirColumn);
 					String fileName = (String)candidateScriptsTableModel.getValueAt(i,configNameColumn);
 					Hashtable<String, String> env = new Hashtable<String, String>();
-					env.put("QUALNET_HOME", envHomesTextField.getText());
 					
-					// Add environment variables ( except QUALNET_HOME )
 					for(int envRow = 0; envRow < environmentalVariableTableModel.getRowCount(); ++envRow){
 						String variable = (String) environmentalVariableTableModel.getValueAt(envRow, envVariableColumn);
 						String value    = (String) environmentalVariableTableModel.getValueAt(envRow, envValueColumn);
@@ -566,12 +623,19 @@ public class AddGeneralJobDialog extends JDialog implements ActionListener{
 					}
 					
 					//String exePath = "cmd.exe";
-					String exePath = "powershell.exe";
+					String exePath = ScriptTable.getInstance().getExPath(getExtension(fileName));
 					
 					int np = Integer.parseInt(npTextField.getText());
 					
 					ArrayList<String> args = new ArrayList<String>();
-					args.add(fileName);
+					
+					if(exePath != null)
+					{
+						args.add(fileName);
+					}else
+					{
+						exePath = fileName;
+					}
 					args.addAll(parseArguments(argsTextField.getText()));
 					//args.add(argsTextField.getText());
 					

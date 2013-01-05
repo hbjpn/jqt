@@ -177,7 +177,7 @@ class JobTableModel extends AbstractTableModel{
     	if( col == JOBID_COLUMN ){
     		return Integer.toString(jobTableElement.getJobId());
     	}else if( col == STATUS_COLUMN){
-    		return jobInfo.jobStatus;
+    		return jobInfo.jobStatus.status;
     	}else if( col == SCENARIO_DIRECTORY_COLUMN){
     		return job.directoryPath;
     	}else if( col == EXECUTION_FILE_COLUMN){
@@ -281,7 +281,7 @@ class JobTableModel extends AbstractTableModel{
     
     public void addRow(JobTableElement element){
     	//data.
-    	System.out.println("Job added");
+    	System.out.println("Job added : " + element.getJobInfo().jobStatus.status);
     	
     	jobList.add(element);
     	

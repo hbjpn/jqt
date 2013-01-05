@@ -39,8 +39,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Properties;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -71,6 +69,8 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	
 	// Jqt Engine
     JqtEngine engine;
+    
+    javax.swing.Timer updateTimer = new javax.swing.Timer(1000, this);
     
     int nextJobId;
 	
@@ -127,7 +127,8 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
         engine.start();
         
         nextJobId = 0;
-        
+        updateTimer.setRepeats(true);
+        updateTimer.start();
 		
 		addWindowListener(new WindowAdapter() { 
 			//@Override 
@@ -315,6 +316,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 			
 			if( preferenceDialog.lastOperation == preferenceDialog.OKButton ){
 				maxAvailableProcessors = Integer.valueOf( preferenceDialog.maxAvailableProcessorTextField.getText() );
+				engine.changeProcessors(maxAvailableProcessors);
 			}
 				
 		}else if( e.getSource() == menuPuClearSelectedJobs ){
@@ -338,6 +340,16 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 			}
 		}else if( e.getSource() == menuPuRecalculateSelectedJobs ){
 			revertToWaitingStatus( jobListTable.getSelectedRows() );
+		}else if( e.getSource() == this.updateTimer )
+		{
+			for(int i = 0; i < jobListTable.getRowCount(); ++i)
+			{
+				JobTableModel model = (JobTableModel)jobListTable.getModel();
+				JobTableElement element = model.get(i);
+				JqtJob job = element.getJobInfo().relatedJob;
+				element.setJobInfo(this.engine.getJobInfo(job));
+			}
+			jobListTable.updateUI();
 		}
 			
 	}

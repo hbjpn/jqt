@@ -27,6 +27,10 @@ import net.abcabba.jqt.core.*;
 public class JobTableElement{
 
 	private JqtJobInfo jobInfo;
+	public void setJobInfo(JqtJobInfo jobInfo) {
+		this.jobInfo = jobInfo;
+	}
+
 	private int jobId;
 	
 	public int getJobId() {
