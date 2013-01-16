@@ -7,7 +7,7 @@
   <property name="classes"         value="./classes" />
   <property name="package" value="com.github.hbjpn.jqt" />
 
-  <target name="all" depends="init,compile" />
+  <target name="all" depends="init,compile,jar" />
 
   <!-- Initialize -->
   <target name="init">
@@ -18,6 +18,14 @@
   <target name="compile">
     <javac srcdir="${source}" destdir="${classes}"
       debug="on" optimize="off" deprecation="off" />
+  </target>
+
+  <target name="jar">
+    <jar basedir="./classes" jarfile="jqt.jar">
+      <manifest>
+        <attribute name="Main-Class" value="net.abcabba.jqt.gui.JobQueueingTool"/>
+      </manifest>
+    </jar>
   </target>
 
   <!-- make javadoc -->
