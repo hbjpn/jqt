@@ -82,7 +82,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	JMenuItem menuClearAllJobs;
 	
 	JMenuItem menuPlayPause;
-	
+	JMenuItem menuExit;
 	JMenuItem menuAbout;
 	
 	JTextArea outputWindow = new JTextArea();
@@ -221,8 +221,8 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		JMenuBar menuBar = new JMenuBar();
 		JMenu menuFile = new JMenu("File");
 		JMenuItem menuOpen = new JMenuItem("Open");
-		JMenuItem menuExit = new JMenuItem("Exit");
-		
+		menuExit = new JMenuItem("Exit");		
+	
 		JMenu menuJob = new JMenu("Job");
 		menuAddGeneralJobs = new JMenuItem("Add General jobs ...");
 		menuClearCompletedErroredJobs = new JMenuItem("Clear completed/errored jobs");
@@ -301,6 +301,10 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		if( e.getSource() == menuAddGeneralJobs ){
 			addGeneralJobDialog.setAlwaysOnTop(false);
 			addGeneralJobDialog.setVisible(true);
+		}else if( e.getSource() == menuExit )
+		{
+			this.processWindowEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
+			
 		}else if( e.getSource() == menuPlayPause ){
 			if( engine.getStatus() == JqtEngine.JqtEngineStatus.IDLE ){ 
 				engine.playEngine();
@@ -559,37 +563,44 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
         String cpath = System.getProperty("user.dir") +
                 File.separator + "plugins";
         
-        System.out.println(cpath);
+        System.out.println("# Loading plugins ... ");
         try {
             File f = new File(cpath);
-            String[] files = f.list();
-            for (int i = 0; i < files.length; i++) {
-                if (files[i].endsWith(".jar")) {
-                    File file = new File(cpath + File.separator +
-                            files[i]);
-                    JarFile jar = new JarFile(file);
-                    Manifest mf = jar.getManifest();
-                    Attributes att = mf.getMainAttributes();
-                    String cname = att.getValue("Plugin-Class");
-                    URL url = file.getCanonicalFile().toURI().toURL();
-                    URLClassLoader loader = new URLClassLoader(
-                            new URL[] { url });
-                    Class cobj = loader.loadClass(cname);
-                    Class[] ifnames = cobj.getInterfaces();
-                    for (int j = 0; j < ifnames.length; j++) {
-                        if (ifnames[j] == JobSchedulerPluginBase.class) {
-                            System.out.println("Load plugin : " + cname);
-                            JobSchedulerPluginBase plugin =
-                                (JobSchedulerPluginBase)cobj.newInstance();
-                            plugins.add(plugin);
-                            break;
-                        }
-                    }
-                }
+            if( (!f.exists()) || (!f.isDirectory()))
+            {
+            	System.out.println("# Cannot access to plugings directory : " + cpath);
+            }else
+            {
+	            String[] files = f.list();
+	            for (int i = 0; i < files.length; i++) {
+	                if (files[i].endsWith(".jar")) {
+	                    File file = new File(cpath + File.separator +
+	                            files[i]);
+	                    JarFile jar = new JarFile(file);
+	                    Manifest mf = jar.getManifest();
+	                    Attributes att = mf.getMainAttributes();
+	                    String cname = att.getValue("Plugin-Class");
+	                    URL url = file.getCanonicalFile().toURI().toURL();
+	                    URLClassLoader loader = new URLClassLoader(
+	                            new URL[] { url });
+	                    Class cobj = loader.loadClass(cname);
+	                    Class[] ifnames = cobj.getInterfaces();
+	                    for (int j = 0; j < ifnames.length; j++) {
+	                        if (ifnames[j] == JobSchedulerPluginBase.class) {
+	                            System.out.println("Load plugin : " + cname);
+	                            JobSchedulerPluginBase plugin =
+	                                (JobSchedulerPluginBase)cobj.newInstance();
+	                            plugins.add(plugin);
+	                            break;
+	                        }
+	                    }
+	                }
+	            }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        System.out.println("# " + plugins.size() + " plugins loaded.");
         return plugins;
     }
 }
