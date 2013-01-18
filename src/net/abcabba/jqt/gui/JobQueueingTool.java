@@ -54,6 +54,20 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Result;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 //import JobRunThread.PeriodicTimer;
 
@@ -76,6 +90,9 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	
 	// Job table
 	JTable jobListTable;
+	
+	JMenuItem menuOpen;
+	JMenuItem menuSave;
 	
 	JMenuItem menuAddGeneralJobs;
 	JMenuItem menuClearCompletedErroredJobs;
@@ -220,7 +237,8 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		/* Menu Bars */
 		JMenuBar menuBar = new JMenuBar();
 		JMenu menuFile = new JMenu("File");
-		JMenuItem menuOpen = new JMenuItem("Open");
+		menuOpen = new JMenuItem("Open");
+		menuSave = new JMenuItem("Save");
 		menuExit = new JMenuItem("Exit");		
 	
 		JMenu menuJob = new JMenu("Job");
@@ -236,6 +254,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 
 		menuFile.setMnemonic('F');
 		menuOpen.setMnemonic('O');
+		menuSave.setMnemonic('S');
 		menuPreference.setMnemonic('P');
 		menuExit.setMnemonic('x');
 		menuJob.setMnemonic('J');
@@ -244,6 +263,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		menuHelp.setMnemonic('H');
 
 		menuOpen.addActionListener(this);
+		menuSave.addActionListener(this);
 		menuPreference.addActionListener(this);
 		menuExit.addActionListener(this);
 		menuAddGeneralJobs.addActionListener(this);
@@ -254,6 +274,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		getRootPane().setJMenuBar(menuBar);
 		menuBar.add(menuFile);
 		menuFile.add(menuOpen);
+		menuFile.add(menuSave);
 		menuFile.addSeparator();
 		menuFile.add(menuPreference);
 		menuFile.addSeparator();
@@ -298,7 +319,61 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	
 	public void actionPerformed(ActionEvent e) {
 		//System.out.println("ActionPerformed : [" + e.getActionCommand() + "]");
-		if( e.getSource() == menuAddGeneralJobs ){
+		if( e.getSource() == menuOpen)
+		{
+			ArrayList<JqtJob> jobList = JqtJob.fromXml("out.xml");
+			for(JqtJob job : jobList)
+			{
+				addJob(job);
+			}
+			
+		}else if( e.getSource() == menuSave )
+		{
+			
+			DocumentBuilderFactory dbfactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder docbuilder = null;
+			try {
+				docbuilder = dbfactory.newDocumentBuilder();
+			} catch (ParserConfigurationException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			Document document = docbuilder.newDocument();
+			document.appendChild(document.createElement("jobs"));
+	
+			for(int r = 0; r < jobListTableModel.getRowCount(); ++r)
+			{
+				Node jobNode = jobListTableModel.get(r).getJobInfo().relatedJob.toXml(document);
+				document.getLastChild().appendChild(jobNode);
+			}
+			
+			File outXml = new File("out.xml");
+
+			TransformerFactory transFactory = TransformerFactory.newInstance();
+			Transformer transformer = null;
+			try {
+				transformer = transFactory.newTransformer();
+			} catch (TransformerConfigurationException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			//transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+			
+			// OutputPropertiesFactory.S_KEY_INDENT_AMOUNTをセットする
+			//transformer.setOutputProperty(
+			//		OutputPropertiesFactory.S_KEY_INDENT_AMOUNT, "2");
+
+			Result result = new StreamResult(outXml);
+
+			try {
+				transformer.transform(new DOMSource(document), result);
+			} catch (TransformerException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+		}else if( e.getSource() == menuAddGeneralJobs ){
 			addGeneralJobDialog.setAlwaysOnTop(false);
 			addGeneralJobDialog.setVisible(true);
 		}else if( e.getSource() == menuExit )
@@ -399,7 +474,14 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 			int np)
 	{
 		JqtJob newJob = new JqtJob(directoryPath, firstArg, env, exePath, np);
-		
+		addJob(newJob);
+	}
+	
+	/**
+	 * @param newJob New job to add
+	 */
+	public void addJob(JqtJob newJob)
+	{
 		engine.add(newJob);
 		JqtJobInfo jobInfo = engine.getJobInfo(newJob);
 		
