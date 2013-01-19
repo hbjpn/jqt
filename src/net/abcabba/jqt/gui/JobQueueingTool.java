@@ -43,6 +43,7 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -93,6 +94,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	
 	JMenuItem menuOpen;
 	JMenuItem menuSave;
+	JMenuItem menuSaveAs;
 	
 	JMenuItem menuAddGeneralJobs;
 	JMenuItem menuClearCompletedErroredJobs;
@@ -103,6 +105,8 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	JMenuItem menuAbout;
 	
 	JTextArea outputWindow = new JTextArea();
+	
+	String openFile = null;
 	
 	//DefaultTableModel jobListTableModel;
 	//AbstractTableModel jobListTableModel;
@@ -237,8 +241,9 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		/* Menu Bars */
 		JMenuBar menuBar = new JMenuBar();
 		JMenu menuFile = new JMenu("File");
-		menuOpen = new JMenuItem("Open");
+		menuOpen = new JMenuItem("Open ...");
 		menuSave = new JMenuItem("Save");
+		menuSaveAs = new JMenuItem("Save As ...");
 		menuExit = new JMenuItem("Exit");		
 	
 		JMenu menuJob = new JMenu("Job");
@@ -255,6 +260,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		menuFile.setMnemonic('F');
 		menuOpen.setMnemonic('O');
 		menuSave.setMnemonic('S');
+		
 		menuPreference.setMnemonic('P');
 		menuExit.setMnemonic('x');
 		menuJob.setMnemonic('J');
@@ -264,6 +270,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 
 		menuOpen.addActionListener(this);
 		menuSave.addActionListener(this);
+		menuSaveAs.addActionListener(this);
 		menuPreference.addActionListener(this);
 		menuExit.addActionListener(this);
 		menuAddGeneralJobs.addActionListener(this);
@@ -275,6 +282,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		menuBar.add(menuFile);
 		menuFile.add(menuOpen);
 		menuFile.add(menuSave);
+		menuFile.add(menuSaveAs);
 		menuFile.addSeparator();
 		menuFile.add(menuPreference);
 		menuFile.addSeparator();
@@ -317,60 +325,105 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	
 	}
 	
+	public void saveJobs(String path)
+	{
+		
+		DocumentBuilderFactory dbfactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder docbuilder = null;
+		try {
+			docbuilder = dbfactory.newDocumentBuilder();
+		} catch (ParserConfigurationException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		Document document = docbuilder.newDocument();
+		document.appendChild(document.createElement("jobs"));
+
+		for(int r = 0; r < jobListTableModel.getRowCount(); ++r)
+		{
+			Node jobNode = jobListTableModel.get(r).getJobInfo().relatedJob.toXml(document);
+			document.getLastChild().appendChild(jobNode);
+		}
+		
+		File outXml = new File(path);
+
+		TransformerFactory transFactory = TransformerFactory.newInstance();
+		Transformer transformer = null;
+		try {
+			transformer = transFactory.newTransformer();
+		} catch (TransformerConfigurationException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		//transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+		transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+		
+		// OutputPropertiesFactory.S_KEY_INDENT_AMOUNTをセットする
+		//transformer.setOutputProperty(
+		//		OutputPropertiesFactory.S_KEY_INDENT_AMOUNT, "2");
+
+		Result result = new StreamResult(outXml);
+
+		try {
+			transformer.transform(new DOMSource(document), result);
+		} catch (TransformerException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+	
 	public void actionPerformed(ActionEvent e) {
 		//System.out.println("ActionPerformed : [" + e.getActionCommand() + "]");
 		if( e.getSource() == menuOpen)
 		{
-			ArrayList<JqtJob> jobList = JqtJob.fromXml("out.xml");
-			for(JqtJob job : jobList)
-			{
-				addJob(job);
-			}
-			
-		}else if( e.getSource() == menuSave )
-		{
-			
-			DocumentBuilderFactory dbfactory = DocumentBuilderFactory.newInstance();
-			DocumentBuilder docbuilder = null;
-			try {
-				docbuilder = dbfactory.newDocumentBuilder();
-			} catch (ParserConfigurationException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			Document document = docbuilder.newDocument();
-			document.appendChild(document.createElement("jobs"));
+		    JFileChooser filechooser = new JFileChooser(".");
+		    filechooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 	
-			for(int r = 0; r < jobListTableModel.getRowCount(); ++r)
+		    int selected = filechooser.showOpenDialog(this);
+		    if (selected == JFileChooser.APPROVE_OPTION){
+				File file = filechooser.getSelectedFile();
+				ArrayList<JqtJob> jobList = JqtJob.fromXml(file.getAbsolutePath());
+				for(JqtJob job : jobList)
+				{
+					addJob(job);
+				}
+				
+				if(openFile != null)
+				{
+					openFile = file.getAbsolutePath();
+				}else
+				{
+					// TODO : Close current jobs
+				}
+		    }
+		}else if( e.getSource() == menuSaveAs )
+		{
+		    JFileChooser filechooser = new JFileChooser(".");
+		    filechooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+	
+		    int selected = filechooser.showSaveDialog(this);
+		    if (selected == JFileChooser.APPROVE_OPTION){
+				File file = filechooser.getSelectedFile();
+				openFile = file.getAbsolutePath();
+				saveJobs(openFile);
+		    }
+		}
+		else if( e.getSource() == menuSave )
+		{
+			if(openFile != null)
 			{
-				Node jobNode = jobListTableModel.get(r).getJobInfo().relatedJob.toXml(document);
-				document.getLastChild().appendChild(jobNode);
-			}
-			
-			File outXml = new File("out.xml");
-
-			TransformerFactory transFactory = TransformerFactory.newInstance();
-			Transformer transformer = null;
-			try {
-				transformer = transFactory.newTransformer();
-			} catch (TransformerConfigurationException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			//transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-			transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-			
-			// OutputPropertiesFactory.S_KEY_INDENT_AMOUNTをセットする
-			//transformer.setOutputProperty(
-			//		OutputPropertiesFactory.S_KEY_INDENT_AMOUNT, "2");
-
-			Result result = new StreamResult(outXml);
-
-			try {
-				transformer.transform(new DOMSource(document), result);
-			} catch (TransformerException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				saveJobs(openFile);
+			}else
+			{
+			    JFileChooser filechooser = new JFileChooser(".");
+			    filechooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		
+			    int selected = filechooser.showSaveDialog(this);
+			    if (selected == JFileChooser.APPROVE_OPTION){
+					File file = filechooser.getSelectedFile();
+					openFile = file.getAbsolutePath();
+					saveJobs(openFile);
+			    }
 			}
 			
 		}else if( e.getSource() == menuAddGeneralJobs ){
