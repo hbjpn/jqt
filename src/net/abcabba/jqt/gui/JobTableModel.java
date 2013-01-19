@@ -289,6 +289,12 @@ class JobTableModel extends AbstractTableModel{
     	fireTableDataChanged();
     }
     
+    public void removeAll()
+    {
+    	jobList.clear();
+    	fireTableDataChanged();
+    }
+    
     public void removeRows(int[] targetRemovedRows){
     	//data.
     	System.out.println("Remove jobs");
@@ -297,17 +303,13 @@ class JobTableModel extends AbstractTableModel{
     	java.util.Arrays.sort(targetRemovedRows);
     	
     	//targetRemovedRows
-    	/*
-    	synchronized (jobList){
-    		for(int i = targetRemovedRows.length-1; i >= 0; --i){
-    			// Remove ones which are not running
-    			int index = targetRemovedRows[i];
-    			if( jobList.get(index).getStatus() != Job.statusRunning ){
-    				jobList.remove(index);
-    			}
-    		}
-    	}
-    	*/
+		for(int i = targetRemovedRows.length-1; i >= 0; --i){
+			// Remove ones which are not running
+			int index = targetRemovedRows[i];
+			//if( jobList.get(index).getStatus() != Job.statusRunning ){
+				jobList.remove(index);
+			//}
+		}
     	//this.fireTableRowsUpdated(jobList.size()-1, jobList.size()-1);
     	fireTableDataChanged();
     }

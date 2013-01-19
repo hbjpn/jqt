@@ -77,6 +77,16 @@ class JqtJobStartEvent extends JqtJobEvent
 	}
 }
 
+class JqtJobTerminateEvent extends JqtJobEvent
+{
+	JqtJobTerminateEvent(JqtJob relatedJob, SynchronousQueue<Boolean> rendezvousChannel) {
+		super(relatedJob);
+		this.rendezvousChannel = rendezvousChannel;
+	}
+
+	public SynchronousQueue<Boolean> rendezvousChannel;
+}
+
 class JqtJobEndEvent extends JqtJobEvent
 {
 	int exitCode;
@@ -210,6 +220,7 @@ class JqtJobRunThread extends Thread{
 	
 	JqtJob job;
 	JqtEngine engine;
+	Process process;
 	
 	/**
 	 * Constructor
@@ -219,6 +230,7 @@ class JqtJobRunThread extends Thread{
 	JqtJobRunThread(JqtJob job, JqtEngine engine){
 		this.job = job;
 		this.engine = engine;
+		this.process = null;
 	}
 	
 	/**
@@ -243,9 +255,9 @@ class JqtJobRunThread extends Thread{
 	    pb.directory(new File(job.directoryPath));
 	    
 	    try {
-	        Process p = pb.start();
+	        process = pb.start();
 	        
-	        InputStream is = p.getInputStream();
+	        InputStream is = process.getInputStream();
 	        BufferedReader br = new BufferedReader(new InputStreamReader(is));
 	        String line;
 	        while ((line = br.readLine()) != null) {
@@ -259,7 +271,8 @@ class JqtJobRunThread extends Thread{
 	        	}
 	        }
 	        
-	        int ret = p.waitFor();
+	        int ret = process.waitFor();
+	        process = null;
 	        engine.pushEvent(new JqtJobEndEvent(job, ret));
 	        
 			//System.out.printf("End Job with exit code %d\n", ret);
@@ -332,6 +345,14 @@ interface JqtEngineInterface
 	 * @return IDLE : Idling, PLAY : Playing
 	 */
 	public JqtEngine.JqtEngineStatus getStatus();
+	
+	/**
+	 * Terminate job synchronously
+	 * 
+	 * @param job to terminate
+	 * @return true if terminated, otherwise false
+	 */
+	public boolean terminate(JqtJob job);
 	
 	/**
 	 * Play engine
@@ -435,6 +456,31 @@ public class JqtEngine extends Thread implements JqtEngineInterface
 	public void add(JqtJob job)
 	{
 		eventQueue.add(new JqtJobAddEvent(job));
+	}
+	
+	/**
+	 * Terminate job synchronously
+	 * This method is thread safe
+	 * 
+	 * @param job Job to terminate
+	 * @return true if terminated, otherwise false
+	 */
+	@Override
+	public boolean terminate(JqtJob job)
+	{	
+		// TODO Auto-generated method stub
+		SynchronousQueue<Boolean> rendezvousChannel
+			= new SynchronousQueue<Boolean>();
+		eventQueue.add(new JqtJobTerminateEvent(job, rendezvousChannel));
+		
+		boolean ret = false;
+		try {
+			ret = rendezvousChannel.take();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return ret;
 	}
 	
 	/**
@@ -730,6 +776,25 @@ public class JqtEngine extends Thread implements JqtEngineInterface
 			}else if(event instanceof JqtStopEvent)
 			{
 				this.engineStatus = JqtEngineStatus.IDLE;
+			}else if(event instanceof JqtJobTerminateEvent)
+			{
+				JqtJobTerminateEvent e = (JqtJobTerminateEvent)event;
+				JqtJobContext context = jobContextList.get(e.relatedJob);
+				System.out.println("Terminating job " + e.relatedJob + ":" + context);
+				Boolean ret = false;
+				if(context.thread != null && context.thread.process != null)
+				{
+					context.thread.process.destroy();	
+					ret = true;
+				}
+				try{
+					e.rendezvousChannel.put(ret);
+				}catch(Exception e1)
+				{
+					e1.printStackTrace();
+				}
+				
+				invokeJob();
 			}
 		}
 	}

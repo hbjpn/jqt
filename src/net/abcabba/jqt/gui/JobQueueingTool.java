@@ -48,6 +48,7 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
@@ -79,6 +80,8 @@ import java.net.URLClassLoader;
 public class JobQueueingTool extends JFrame implements ActionListener, MouseListener{
 	
 	private static final long serialVersionUID = 1L;
+	
+	static final String windowTitle = "Job Queueing Tool";
 	
 	public static OSType osType = getOsType();
 	
@@ -233,7 +236,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		//tm.addRow(data);
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setTitle("Job queueing tool");
+		setOpenFile(null);
 		setSize(800, 600);
 		setVisible(true);
 		
@@ -325,6 +328,12 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 	
 	}
 	
+	public void setOpenFile(String path)
+	{
+		openFile = path;
+		setTitle(windowTitle + " : " + path);
+	}
+	
 	public void saveJobs(String path)
 	{
 		
@@ -382,18 +391,48 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		    int selected = filechooser.showOpenDialog(this);
 		    if (selected == JFileChooser.APPROVE_OPTION){
 				File file = filechooser.getSelectedFile();
-				ArrayList<JqtJob> jobList = JqtJob.fromXml(file.getAbsolutePath());
-				for(JqtJob job : jobList)
-				{
-					addJob(job);
-				}
 				
-				if(openFile != null)
+				if(openFile == null)
 				{
-					openFile = file.getAbsolutePath();
+					setOpenFile(file.getAbsolutePath());
+					ArrayList<JqtJob> jobList = JqtJob.fromXml(openFile);
+					for(JqtJob job : jobList)
+					{
+						addJob(job);
+					}
 				}else
-				{
-					// TODO : Close current jobs
+				{	
+					
+				    int result = JOptionPane.showConfirmDialog(
+				    		this, "Are you sure terminating current jobs ? ",
+				            "Alert", JOptionPane.OK_CANCEL_OPTION);
+				   
+				    if(result == JOptionPane.OK_OPTION)
+				    {
+					        
+						engine.stopEngine();
+						ArrayList<JqtJobInfo> jobInfos = engine.getJobInfo();
+						for(JqtJobInfo jobInfo : jobInfos)
+						{
+							boolean ret;
+							ret = engine.terminate(jobInfo.relatedJob);
+							System.out.println("Try to terminate " + jobInfo.relatedJob + ":" + ret);
+							engine.remove(jobInfo.relatedJob);
+							System.out.println("Try to remove " + jobInfo.relatedJob + ":" + ret);
+						}
+						
+						this.jobListTableModel.removeAll();
+						
+						setOpenFile(file.getAbsolutePath());
+						
+						ArrayList<JqtJob> jobList = JqtJob.fromXml(openFile);
+						for(JqtJob job : jobList)
+						{
+							addJob(job);
+						}
+
+						jobListTable.updateUI();
+					}
 				}
 		    }
 		}else if( e.getSource() == menuSaveAs )
@@ -404,7 +443,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 		    int selected = filechooser.showSaveDialog(this);
 		    if (selected == JFileChooser.APPROVE_OPTION){
 				File file = filechooser.getSelectedFile();
-				openFile = file.getAbsolutePath();
+				setOpenFile(file.getAbsolutePath());
 				saveJobs(openFile);
 		    }
 		}
@@ -421,7 +460,7 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 			    int selected = filechooser.showSaveDialog(this);
 			    if (selected == JFileChooser.APPROVE_OPTION){
 					File file = filechooser.getSelectedFile();
-					openFile = file.getAbsolutePath();
+					setOpenFile(file.getAbsolutePath());
 					saveJobs(openFile);
 			    }
 			}
