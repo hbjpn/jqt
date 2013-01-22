@@ -145,22 +145,19 @@ public class JqtJob
 				{	
 					Node node = childNodes.item(j);
 					System.out.println("nodeName:"+node.getNodeName());
-					switch(node.getNodeName())
-					{
-					case "directoryPath":
+					String nodeName = node.getNodeName();
+					if(nodeName.equals("directoryPath")){
 						directoryPath = node.getFirstChild().getNodeValue();
-						break;						
-					case "exePath":
+	
+					}else if(nodeName.equals("exePath")){
 						exePath = node.getFirstChild().getNodeValue();
-						break;
-					case "firstArg":
+					}else if(nodeName.equals("firstArg")){
 						NodeList argsNode = node.getChildNodes();
 						for(int ai = 0; ai < argsNode.getLength(); ++ai)
 						{
 							args.add(argsNode.item(ai).getFirstChild().getNodeValue());
 						}
-						break;
-					case "env":
+					}else if(nodeName.equals("env")){
 						NodeList entryNodes = node.getChildNodes();
 						for(int ei = 0; ei < entryNodes.getLength(); ++ei)
 						{
@@ -169,30 +166,21 @@ public class JqtJob
 							for(int entryContentIdx = 0; entryContentIdx < entryContent.getLength(); ++entryContentIdx)
 							{
 								Node en = entryContent.item(entryContentIdx);
-								switch(en.getNodeName())
-								{
-									case "key":
-										key = en.getFirstChild().getNodeValue();
-										break;
-									case "value":
-										value = en.getFirstChild().getNodeValue();
-										break;
-										
+								if(en.getNodeName().equals("key")){
+									key = en.getFirstChild().getNodeValue();
+								}else if(en.getNodeName().equals("value")){
+									value = en.getFirstChild().getNodeValue();
 								}
 							}
 							env.put(key,  value);
 							
 						}
-						break;
-					case "np":
+					}else if(nodeName.equals("np")){
 						np = Integer.parseInt(node.getFirstChild().getNodeValue());
-						break;
-					default:
-						break;
+					}else{
 					}
 				}
 				
-				//node.getElementByTagName("np");
 				System.out.println(
 						directoryPath + "," +
 						args + "," +
