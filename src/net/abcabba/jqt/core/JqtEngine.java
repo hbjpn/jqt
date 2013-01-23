@@ -97,6 +97,16 @@ class JqtJobEndEvent extends JqtJobEvent
 	}
 }
 
+class JqtJobOutputEvent extends JqtJobEvent
+{
+	JqtJobOutputEvent(JqtJob relatedJob, String line) {
+		super(relatedJob);
+		this.line = line;
+	}
+
+	public String line;
+}
+
 class JqtJobProgressUpdateEvent extends JqtJobEvent
 {
 	JqtJobProgressUpdateEvent(JqtJob relatedJob, double progress) {
@@ -261,6 +271,10 @@ class JqtJobRunThread extends Thread{
 	        BufferedReader br = new BufferedReader(new InputStreamReader(is));
 	        String line;
 	        while ((line = br.readLine()) != null) {
+	        	
+	        	// Could affect another important events if too much stream output. 
+	        	engine.pushEvent(new JqtJobOutputEvent(job, line));	        	
+	        	
 	        	if( line.length() == 0 ){
 	        		continue;
 	        	}
@@ -421,6 +435,8 @@ public class JqtEngine extends Thread implements JqtEngineInterface
 	LinkedBlockingQueue<JqtEvent> eventQueue = new LinkedBlockingQueue<JqtEvent>();
 	
 	JqtEngineStatus engineStatus;
+	
+	String crlf = System.getProperty("line.separator");
 	
 	/**
 	 * Constructor 
@@ -695,6 +711,16 @@ public class JqtEngine extends Thread implements JqtEngineInterface
 				}
 				
 				invokeJob();
+			}
+			else if(event instanceof JqtJobOutputEvent)
+			{
+				JqtJobOutputEvent e = (JqtJobOutputEvent)event;
+				
+				JqtJobContext context = jobContextList.get(e.relatedJob);
+				if(context != null)
+				{
+					context.jobStatus.stdout += (e.line + this.crlf);
+				}
 			}
 			else if(event instanceof JqtJobProgressUpdateEvent)
 			{

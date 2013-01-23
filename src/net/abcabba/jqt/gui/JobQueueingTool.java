@@ -211,10 +211,11 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 				// TODO Auto-generated method stub
 				if( e.getValueIsAdjusting() ) return;
 				
-				int firstSelectedRow = jobListTable.getSelectedRow();
-				if( firstSelectedRow >= 0 ){
-					//outputWindow.setText(jobListTableModel.get(firstSelectedRow).getStdouts());					
-				}
+				int firstSelectedRow = jobListTable.getSelectedRow(); 
+				if(firstSelectedRow >= 0){				
+					outputWindow.setText(
+							jobListTableModel.get(firstSelectedRow).getJobInfo().jobStatus.stdout);			
+				}				
 			}
 			
 		});
@@ -522,6 +523,13 @@ public class JobQueueingTool extends JFrame implements ActionListener, MouseList
 				JqtJob job = element.getJobInfo().relatedJob;
 				element.setJobInfo(this.engine.getJobInfo(job));
 			}
+			
+			int firstSelectedRow = jobListTable.getSelectedRow(); 
+			if(firstSelectedRow >= 0){				
+				this.outputWindow.setText(
+						jobListTableModel.get(firstSelectedRow).getJobInfo().jobStatus.stdout);			
+			}
+			
 			jobListTable.updateUI();
 		}
 			

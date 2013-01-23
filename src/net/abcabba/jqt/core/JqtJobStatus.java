@@ -40,6 +40,7 @@ public class JqtJobStatus
 		this.status = WAITING;
 		this.jobStartDate = -1;
 		this.jobEndDate = -1;
+		this.stdout = new String("");
 	}
 	
 	public JqtJobStatus clone()
@@ -49,12 +50,14 @@ public class JqtJobStatus
 		obj.status = status;
 		obj.jobStartDate = jobStartDate;
 		obj.jobEndDate = jobEndDate;
+		obj.stdout =  new String(this.stdout);
 		return obj;
 	}
 	public double progress;
 	public String status;	
 	public long jobStartDate;
 	public long jobEndDate;
+	public String stdout;
 
 }
 
